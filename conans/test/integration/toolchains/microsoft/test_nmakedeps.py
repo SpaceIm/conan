@@ -29,6 +29,8 @@ def test_nmakedeps():
                 self.cpp_info.components["pkg-3"].requires = ["pkg-1", "pkg-2"]
                 self.cpp_info.components["pkg-4"].libs = ["pkg-4"]
                 self.cpp_info.components["pkg-4"].defines = ["TEST_DEFINITION4=foo"]
+                self.cpp_info.components["pkg-5"].libs = ["pkg-5"]
+                self.cpp_info.components["pkg-5"].defines = ["TEST_DEFINITION5=__declspec(dllimport)"]
     """)
     client.save({"conanfile.py": conanfile})
     client.run("create . -s arch=x86_64")
@@ -38,10 +40,13 @@ def test_nmakedeps():
     bat_file = client.load("conannmakedeps.bat")
     # Checking that defines are added to CL
     for flag in (
-        r"/DTEST_DEFINITION1", r"/DTEST_DEFINITION2#0",
-        r"/DTEST_DEFINITION3#", r'/DTEST_DEFINITION4#\\"foo\\"',
+        r"/DTEST_DEFINITION1",
+        r"/DTEST_DEFINITION2#0",
+        r"/DTEST_DEFINITION3#",
+        r'/DTEST_DEFINITION4#\\"foo\\"',
+        r'/DTEST_DEFINITION5#\\"__declspec\\(dllimport\\)\\"',
     ):
         assert re.search(fr'set "CL=%CL%.*\s{flag}(?:\s|")', bat_file)
     # Checking that libs and system libs are added to _LINK_
-    for flag in (r"pkg-1\.lib", r"pkg-2\.lib", r"pkg-3\.lib", r"pkg-4\.lib", r"ws2_32\.lib"):
+    for flag in (r"pkg-1\.lib", r"pkg-2\.lib", r"pkg-3\.lib", r"pkg-4\.lib", r"pkg-5\.lib", r"ws2_32\.lib"):
         assert re.search(fr'set "_LINK_=%_LINK_%.*\s{flag}(?:\s|")', bat_file)

@@ -1,4 +1,5 @@
 import os
+import re
 
 from conan.internal import check_duplicated_generator
 from conan.tools import CppInfo
@@ -51,7 +52,14 @@ class NMakeDeps(object):
                     # https://learn.microsoft.com/en-us/cpp/build/reference/cl-environment-variables
                     macro, value = define.split("=", 1)
                     if value and not value.isnumeric():
-                        value = f'\\"{value}\\"'
+                        # Several characters have to be protected if there are not already protected.
+                        # Full list of characters to protect is not documented anywhere, but we know
+                        # that parenthesis have to be protected.
+                        chars_to_protect = [r"\(", r"\)"]
+                        pattern = r"((?<!\\)({}))".format("|".join(chars_to_protect))
+                        value = re.sub(pattern, r"\\\1", value)
+                        # And also protect the whole value with protected double quotes
+                        value = fr'\"{value}\"'
                     define = f"{macro}#{value}"
                 return f"/D{define}"
 
